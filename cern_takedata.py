@@ -3,6 +3,8 @@ import target_io
 import time
 import subprocess
 import sys
+import cern_extract
+import matplotlib.pyplot as plt
 
 garbage, initialize = sys.argv
 
@@ -53,7 +55,7 @@ while command != 'x':
     print('p: Set PMTref4      d: Set deadtime      c: Set Capture Time')
     print('n: Set nblocks      l: Set Trig Delay    f: Set filename')
     print('s: Show Plot        e: Echo params       r: Begin Capture       ')
-    print('x: Exit')
+    print('q: Begin Acq.       x: Exit')
     print('\n')
     
     command = input('Enter Command: ')
@@ -95,7 +97,7 @@ while command != 'x':
         board = target_driver.TargetModule(board_def, asic_def, trigger_asic_def, 0)
         board.ReconnectToServer(my_ip, 8201, board_ip, 8105)
 
-        subprocess.call('rm ' + valFilename, shell = True)
+        subprocess.call('rm ' + valFilename + ' ' + valFilename.split('_')[0]+'_r1.tio', shell = True)
         
         #Set Vped
         for channel in range(16):
@@ -169,8 +171,18 @@ while command != 'x':
         print('done.')
         
         if valShowPlot == True:
-            pass
+            raw, cal, cmc = cern_extract.extractADCS(valFilename, valFilename.split('_')[0]+'_r1.tio', valNBlocks)
+            f, axs = plt.subplots(nrows = 8, ncols = 3)
+            axs[0].plot(np.sum(raw, (0,1)), color='black')
+            axs[1].plot(np.sum(cal, (0,1)), color='black')
+            for channel in range(16):
+                axs[channel+3].plot(raw[0, channel, :], color='black', linestyle='--')
+                axs[channel+3].plot(cal[0, channel, :], color='black')
+            plt.show()
+            
         
+            
+            
 
 
     elif command == 'x':
